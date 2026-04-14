@@ -4,4 +4,4 @@ all_sources = [
     'src/http/http_server.cpp'
 ]
 
-executable('meshbridge', sources: ['src/main.cpp', all_sources]);
+executable('meshbridge', sources: ['src/main.cpp', all_sources])
