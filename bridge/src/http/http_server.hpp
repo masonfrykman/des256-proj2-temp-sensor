@@ -1,10 +1,16 @@
 
 #include <sys/types.h>
+#include <string>
+#include <unordered_map>
 
 class HTTPServer final {
     private:
         bool _shutdown = false;
 
+        bool _isValidRequestLine(std::string line);
+        std::unordered_map<std::string, std::string>* _recievedHead(std::string msg);
+
+        void _recieveRequests(int sockfd);
         void _listenToInterface(struct addrinfo* info, int port);
 
     public:
