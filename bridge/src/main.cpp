@@ -1,5 +1,6 @@
 #include "http/http_server.hpp"
 #include "http/response.hpp"
+#include "http/http_server_sec.hpp"
 
 #include <unordered_map>
 #include <iostream>
@@ -73,7 +74,13 @@ int main(int argc, char* argv[]) {
         }
     };
 
-    s.run(10100);
+    SecureHTTPServer secs;
+
+    secs.routeHandlers = s.routeHandlers;
+
+    secs.run(443);
+
+    s.run(80);
 
     return 0;
 }
