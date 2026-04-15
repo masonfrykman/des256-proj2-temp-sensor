@@ -7,6 +7,7 @@
 #include <string>
 #include <stdexcept>
 #include <ctime>
+#include <thread>
 
 std::unordered_map<std::string, int> temps;
 std::unordered_map<std::string, time_t> times;
@@ -74,11 +75,16 @@ int main(int argc, char* argv[]) {
         }
     };
 
-    SecureHTTPServer secs;
+    
 
-    secs.routeHandlers = s.routeHandlers;
+    std::thread* ss = new std::thread([s](){
+        SecureHTTPServer secs;
 
-    secs.run(443);
+        secs.routeHandlers = s.routeHandlers;
+
+        secs.run(443);
+    });
+    
 
     s.run(80);
 
