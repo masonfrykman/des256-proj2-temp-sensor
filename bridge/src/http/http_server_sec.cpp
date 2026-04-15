@@ -113,7 +113,7 @@ std::unordered_map<std::string, std::string>* SecureHTTPServer::_recievedHead(st
     return headers;
 }
 
-bool SecureHTTPServer::_recievedEntireMessage(int sockfd, std::unordered_map<std::string, std::string>* processedHeaders, std::string body) {
+bool SecureHTTPServer::_recievedEntireMessage(SSL* sockfd, std::unordered_map<std::string, std::string>* processedHeaders, std::string body) {
     if(processedHeaders->count("__PATH__") == 0) {
         // invalid header object
         delete processedHeaders;
@@ -147,12 +147,13 @@ bool SecureHTTPServer::_recievedEntireMessage(int sockfd, std::unordered_map<std
     return true;
 }
 
-void SecureHTTPServer::_send(int sockfd, std::string const& message) {
+void SecureHTTPServer::_send(SSL* sock, std::string const& message) {
     if(message.empty()) return;
 
     std::string b = message;
     while(!b.empty()) {
-        ssize_t s = send(sockfd, b.c_str(), b.length(), 0);
+        //ssize_t s = send(sockfd, b.c_str(), b.length(), 0);
+        auto s = SSL_write(sock, b.c_str(), b.length());
         if(s == -1) {
             throw std::runtime_error("Send failed, errno=" + std::to_string(errno));
         }
@@ -232,9 +233,9 @@ void SecureHTTPServer::_recieveRequests(int sockfd, SSL_CTX* ctx) {
                             if(m1_headers->count("Content-Length") != 0) {
                                 m2_contentLength = std::atoi(m1_headers->at("Content-Length").c_str());
                             } else {
-                                bool x = _recievedEntireMessage(sockfd, m1_headers, buf.str()); // note: deletes m1_headers
+                                bool x = _recievedEntireMessage(ssl, m1_headers, buf.str()); // note: deletes m1_headers
                                 if(!x) {
-                                    close(sockfd);
+                                    SSL_free(ssl);
                                     return;
                                 }
                                 mode = 0;
@@ -270,7 +271,7 @@ void SecureHTTPServer::_recieveRequests(int sockfd, SSL_CTX* ctx) {
 
         buf << c;
         if(mode == 2 && m2_count == m2_contentLength) { // mode == 3 -> empty body
-            bool x = _recievedEntireMessage(sockfd, m1_headers, buf.str()); // note: deletes m1_headers
+            bool x = _recievedEntireMessage(ssl, m1_headers, buf.str()); // note: deletes m1_headers
             if(!x) {
                 break; // stop recieving.
             }
@@ -279,6 +280,7 @@ void SecureHTTPServer::_recieveRequests(int sockfd, SSL_CTX* ctx) {
         }
     }
 
+    SSL_free(ssl);
     close(sockfd);
 }
 
@@ -308,12 +310,12 @@ void SecureHTTPServer::_listenToInterface(struct addrinfo *info, int port) {
         return;
     }
 
-    if (SSL_CTX_use_certificate_chain_file(ctx, "cert.pem") <= 0) {
+    if (SSL_CTX_use_certificate_chain_file(ctx, "/etc/letsencrypt/live/t1.frykman.dev/fullchain.pem") <= 0) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
 
-    if (SSL_CTX_use_PrivateKey_file(ctx, "key.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx, "/etc/letsencrypt/live/t1.frykman.dev/privkey.pem", SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }

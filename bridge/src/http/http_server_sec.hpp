@@ -15,8 +15,8 @@ class SecureHTTPServer {
 
         bool _isValidRequestLine(std::string line);
         std::unordered_map<std::string, std::string>* _recievedHead(std::string msg);
-        bool _recievedEntireMessage(int sockfd, std::unordered_map<std::string, std::string>* processedHeaders, std::string body);
-        void _send(int sockfd, std::string const& message);
+        bool _recievedEntireMessage(SSL* sockfd, std::unordered_map<std::string, std::string>* processedHeaders, std::string body);
+        void _send(SSL* sock, std::string const& message);
 
         void _recieveRequests(int sockfd, SSL_CTX* ctx);
         void _listenToInterface(struct addrinfo* info, int port);
