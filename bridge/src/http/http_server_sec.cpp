@@ -168,7 +168,7 @@ void SecureHTTPServer::_recieveRequests(int sockfd, SSL_CTX* ctx) {
     SSL_set_fd(ssl, sockfd);
 
     if(SSL_accept(ssl) <= 0) {
-        // TODO: err
+        std::cerr << "Couldn't accept SSL socket" << std::endl;
         return;
     }
 
