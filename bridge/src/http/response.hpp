@@ -12,6 +12,11 @@ class Response final {
             status = statusLine;
         }
 
+        Response(std::string statusLine, std::string body) {
+            status = statusLine;
+            this->body = body;
+        }
+
         std::string to_string() {
             std::stringstream s;
             s << "HTTP/1.1 ";
