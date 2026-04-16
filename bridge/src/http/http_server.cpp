@@ -271,8 +271,10 @@ void HTTPServer::_recieveRequests(int sockfd) {
 }
 
 void HTTPServer::_listenToInterface(struct addrinfo *info, int port) {
-    // TODO: check system calls for errors
     int sockfd = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
+    if(sockfd < 0) {
+        throw std::runtime_error("socket failed! errno=" + std::to_string(errno));
+    }
 
     int b = bind(sockfd, info->ai_addr, info->ai_addrlen);
     if(b == -1) {
@@ -288,6 +290,10 @@ void HTTPServer::_listenToInterface(struct addrinfo *info, int port) {
         struct sockaddr remoteAddr;
         socklen_t remoteAddrLen;
         int remoteSockfd = accept(sockfd, &remoteAddr, &remoteAddrLen);
+        if(remoteSockfd < 0) {
+            std::cerr << "Error accepting connection" << std::endl;
+            continue;
+        }
 
         std::thread* t = new std::thread([this](int sockfd) {
             this->_recieveRequests(sockfd);
@@ -297,6 +303,7 @@ void HTTPServer::_listenToInterface(struct addrinfo *info, int port) {
     }
 
     delete info;
+    close(sockfd);
 }
 
 void HTTPServer::run(int port) {
