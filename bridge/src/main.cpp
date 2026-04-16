@@ -1,6 +1,7 @@
 #include "http/http_server.hpp"
 #include "http/response.hpp"
 #include "http/http_server_sec.hpp"
+#include "util/env.hpp"
 
 #include <unordered_map>
 #include <iostream>
@@ -78,12 +79,21 @@ int main(int argc, char* argv[]) {
     
 
     std::thread* ss = new std::thread([s](){
-        SecureHTTPServer secs;
+        std::string pk = sgetenv("BRIDGE_PK");
+        std::string certChain = sgetenv("BRIDGE_CERTCHAIN");
+        if(pk.empty() || certChain.empty()) {
+            std::cout << "BRIDGE_PK and BRIDGE_CERTCHAIN environment variables not set, not starting HTTPS server." << std::endl;
+            return;
+        }
 
-        secs.routeHandlers = s.routeHandlers;
+        SecureHTTPServer secureServer(certChain, pk);
 
-        secs.run(443);
+        secureServer.routeHandlers = s.routeHandlers;
+
+        secureServer.run(443);
     });
+    ss->detach();
+    delete ss;
     
 
     s.run(80);

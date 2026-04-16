@@ -21,10 +21,12 @@ class SecureHTTPServer {
         void _recieveRequests(int sockfd, SSL_CTX* ctx);
         void _listenToInterface(struct addrinfo* info, int port);
 
-        
+        std::string _certChain;
+        std::string _privateKey;
 
     public:
-        SecureHTTPServer() {}
+        SecureHTTPServer(std::string certChainPath, std::string privateKeyPath) 
+            : _certChain(certChainPath), _privateKey(privateKeyPath) {}
 
         std::unordered_map<std::string, std::function<Response*(Request&)>> routeHandlers;
 

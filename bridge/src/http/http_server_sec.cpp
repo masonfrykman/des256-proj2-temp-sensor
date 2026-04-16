@@ -191,7 +191,6 @@ void SecureHTTPServer::_recieveRequests(int sockfd, SSL_CTX* ctx) {
     // mode-specific variables.
     int m1_seqCR = 0;
     int m1_seqLF = 0;
-    bool m1_seenNewline = false;
     std::unordered_map<std::string, std::string>* m1_headers = nullptr;
     int m2_count = 0;
     int m2_contentLength = 0;
@@ -243,7 +242,6 @@ void SecureHTTPServer::_recieveRequests(int sockfd, SSL_CTX* ctx) {
                             m2_count = 0;
                         }
 
-                        m1_seenNewline = false; // reset for next request
                         continue;
 
                     } else {
@@ -310,12 +308,12 @@ void SecureHTTPServer::_listenToInterface(struct addrinfo *info, int port) {
         return;
     }
 
-    if (SSL_CTX_use_certificate_chain_file(ctx, "/etc/letsencrypt/live/t1.frykman.dev/fullchain.pem") <= 0) {
+    if (SSL_CTX_use_certificate_chain_file(ctx, _certChain.c_str()) <= 0) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
 
-    if (SSL_CTX_use_PrivateKey_file(ctx, "/etc/letsencrypt/live/t1.frykman.dev/privkey.pem", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx, _privateKey.c_str(), SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
@@ -325,9 +323,11 @@ void SecureHTTPServer::_listenToInterface(struct addrinfo *info, int port) {
         socklen_t remoteAddrLen;
         int remoteSockfd = accept(sockfd, &remoteAddr, &remoteAddrLen);
 
-        std::thread* t = new std::thread([=](int sockfd) {
+        std::thread* t = new std::thread([this, ctx](int sockfd) {
             this->_recieveRequests(sockfd, ctx);
         }, remoteSockfd);
+        t->detach();
+        delete t;
     }
 
     delete info;
@@ -357,12 +357,16 @@ void SecureHTTPServer::run(int port) {
     // walk through the given interfaces & begin listening to them
     struct addrinfo* curr = servinfo;
     while(curr != NULL) {
-        std::thread* t = new std::thread([=] (struct addrinfo* info, int port) {
+        std::thread* t = new std::thread([this] (struct addrinfo* info, int port) {
             this->_listenToInterface(info, port);
         }, curr, port);
+        t->detach();
+        delete t;
 
         curr = curr->ai_next;
     }
+
+    std::cout << "HTTPS server running on port " << port << std::endl;
 
     while(!_shutdown) {}
 }

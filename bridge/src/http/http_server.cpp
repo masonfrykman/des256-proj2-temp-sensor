@@ -181,7 +181,6 @@ void HTTPServer::_recieveRequests(int sockfd) {
     // mode-specific variables.
     int m1_seqCR = 0;
     int m1_seqLF = 0;
-    bool m1_seenNewline = false;
     std::unordered_map<std::string, std::string>* m1_headers = nullptr;
     int m2_count = 0;
     int m2_contentLength = 0;
@@ -232,7 +231,6 @@ void HTTPServer::_recieveRequests(int sockfd) {
                             m2_count = 0;
                         }
 
-                        m1_seenNewline = false; // reset for next request
                         continue;
 
                     } else {
@@ -291,9 +289,11 @@ void HTTPServer::_listenToInterface(struct addrinfo *info, int port) {
         socklen_t remoteAddrLen;
         int remoteSockfd = accept(sockfd, &remoteAddr, &remoteAddrLen);
 
-        std::thread* t = new std::thread([=](int sockfd) {
+        std::thread* t = new std::thread([this](int sockfd) {
             this->_recieveRequests(sockfd);
         }, remoteSockfd);
+        t->detach();
+        delete t;
     }
 
     delete info;
@@ -323,12 +323,16 @@ void HTTPServer::run(int port) {
     // walk through the given interfaces & begin listening to them
     struct addrinfo* curr = servinfo;
     while(curr != NULL) {
-        std::thread* t = new std::thread([=] (struct addrinfo* info, int port) {
+        std::thread* t = new std::thread([this] (struct addrinfo* info, int port) {
             this->_listenToInterface(info, port);
         }, curr, port);
+        t->detach();
+        delete t;
 
         curr = curr->ai_next;
     }
+
+    std::cout << "HTTP server running on port " << port << std::endl;
 
     while(!_shutdown) {}
 }
