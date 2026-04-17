@@ -1,0 +1,3 @@
+[submodule "meshtastic-firmware-des256"]
+	path = meshtastic-firmware-des256
+	url = https://github.com/masonfrykman/meshtastic-firmware-des256.git
