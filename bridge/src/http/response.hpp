@@ -30,6 +30,7 @@ class Response final {
             }
             s << "Content-Length: " << body.length() << "\r\n";
             s << "Connection: keep-alive" << "\r\n";
+            s << "Access-Control-Allow-Origin: *" << "\r\n";
             s << "\r\n";
 
             if(!body.empty()) {
