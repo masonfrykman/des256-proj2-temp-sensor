@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
                 std::stringstream col;
                 
                 for(auto [k,v] : temps) {
-                    col << k << " " << std::to_string(v) << " " << std::to_string(times.at(k)) << std::endl;
+                    col << k << "|" << std::to_string(v) << "|" << std::to_string(times.at(k)) << std::endl;
                 }
 
                 return new Response("200 OK", col.str());
