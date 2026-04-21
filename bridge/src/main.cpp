@@ -28,47 +28,6 @@ int main(int argc, char* argv[]) {
     // Expose some routes to for the public API.
     s.routeHandlers = {
         {
-            // Sets the temperature of a fridge, timestamping with the time it was recieved.
-            //  - POST: sets a temperature. Body should be a single integer representing the temperature of the fridge.
-            //  - DELETE: Removes any reference to the fridge.
-            
-            "/api/report", [](Request& req) -> Response* {
-                if(req.headers().count("X-PSK") == 0) {
-                    return new Response("401 Unauthorized", "X-PSK must be set.");
-                }
-
-                if(req.headers().at("X-PSK") != psk) {
-                    return new Response("403 Forbidden", "bad PSK.");
-                }
-                
-                if(req.headers().count("X-Fridge") == 0) {
-                    return new Response("400 Bad Request", "No fridge specified.");
-                }
-
-                if(req.method() == "DELETE") {
-                    temps.erase(req.headers().at("X-Fridge"));
-                    times.erase(req.headers().at("X-Fridge"));
-                    return new Response("200 OK", "Fridge information deleted.");
-                }
-
-                if(req.method() != "POST") {
-                    return new Response("404 Not Found");
-                }
-
-                std::string temp = req.body();
-                int conv;
-                try {
-                    conv = std::atoi(temp.c_str());
-                } catch(std::exception e) {
-                    return new Response("400 Bad Request");
-                }
-
-                temps[req.headers().at("X-Fridge")] = conv;
-                times[req.headers().at("X-Fridge")] = time(NULL);
-                return new Response("200 OK", "Successfully set temperature.");
-            }
-        },
-        {
             // Gets all the temperatures & times stored.
             // Responds in a space-seperated list:
             // <fridge name> <temp> <unix time set>
@@ -123,6 +82,46 @@ int main(int argc, char* argv[]) {
         SecureHTTPServer secureServer(certChain, pk);
 
         secureServer.routeHandlers = s.routeHandlers;
+        
+        // Sets the temperature of a fridge, timestamping with the time it was recieved.
+        //  - POST: sets a temperature. Body should be a single integer representing the temperature of the fridge.
+        //  - DELETE: Removes any reference to the fridge.
+        secureServer.routeHandlers["/api/report"] = 
+            [](Request& req) -> Response* {
+                if(req.headers().count("X-PSK") == 0) {
+                    return new Response("401 Unauthorized", "X-PSK must be set.");
+                }
+
+                if(req.headers().at("X-PSK") != psk) {
+                    return new Response("403 Forbidden", "bad PSK.");
+                }
+                
+                if(req.headers().count("X-Fridge") == 0) {
+                    return new Response("400 Bad Request", "No fridge specified.");
+                }
+
+                if(req.method() == "DELETE") {
+                    temps.erase(req.headers().at("X-Fridge"));
+                    times.erase(req.headers().at("X-Fridge"));
+                    return new Response("200 OK", "Fridge information deleted.");
+                }
+
+                if(req.method() != "POST") {
+                    return new Response("404 Not Found");
+                }
+
+                std::string temp = req.body();
+                int conv;
+                try {
+                    conv = std::atoi(temp.c_str());
+                } catch(std::exception e) {
+                    return new Response("400 Bad Request");
+                }
+
+                temps[req.headers().at("X-Fridge")] = conv;
+                times[req.headers().at("X-Fridge")] = time(NULL);
+                return new Response("200 OK", "Successfully set temperature.");
+            };
 
         secureServer.run(443);
     });
