@@ -341,7 +341,9 @@ void HTTPServer::run(int port) {
 
     std::cout << "HTTP server running on port " << port << std::endl;
 
-    while(!_shutdown) {}
+    while(!_shutdown) {
+        std::this_thread::sleep_for(std::chrono::minutes(1));
+    }
 }
 
 void HTTPServer::stop() {
