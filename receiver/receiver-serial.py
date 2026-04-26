@@ -2,12 +2,27 @@ import meshtastic
 import meshtastic.serial_interface
 from pubsub import pub
 import time
+import requests
+from os import environ
 
 # -- CONFIGURATION OPTIONS --
 # TODO: consider moving these to environment variables or args
 SERIAL_PATH = "/dev/cu.usbmodem94A99028C3401"
+if "T1_PSK" not in environ:
+    print("T1_PSK must be a defined environment variable.")
+    raise SystemExit
+
+PSK = environ['T1_PSK']
 
 needsReconnect = True
+
+def report(fridge: str, temp):
+    request = requests.post("https://t1.frykman.dev/api/report", headers={"X-Fridge": f"{fridge}", "X-PSK": PSK}, data=f"{temp}")
+
+    if request.status_code == 403:
+        print("Incorrect PSK defined. Report of temperature failed.")
+    elif request.status_code != 200:
+        print(f"Failed to report temperature (fridge: {fridge}, data: {temp}), received status code {request.status_code}.")
 
 def onRecv(packet, interface):
     if "decoded" not in packet:
@@ -19,12 +34,15 @@ def onRecv(packet, interface):
     if packet["decoded"]["portnum"] != 256:
         return
     
-    print(f"Received packet with 256 port: ${packet}")
+    print(f"Received decoded packet with 256 port: ${packet}")
     # TODO: need to receive data
-    # TODO: need to send the data to t1
+
+    # -- Send data to the webserver --
+    # TODO: replace this with the actual data received.
+    report("Star Farm", 99)
 
 def onDc(interface, topic=pub.AUTO_TOPIC):
-    print("Connection lost!")
+    print("Connection lost! Will try to reconnect within the next 10 seconds.")
     global needsReconnect
     needsReconnect = True
 
@@ -33,13 +51,9 @@ def onCxn(interface, topic=pub.AUTO_TOPIC):
     global needsReconnect
     needsReconnect = False
 
-def log(line, interface):
-    print(f"log: {line}")
-
 pub.subscribe(onRecv, "meshtastic.receive")
 pub.subscribe(onDc, "meshtastic.connection.lost")
 pub.subscribe(onCxn, "meshtastic.connection.established")
-#pub.subscribe(log, "meshtastic.log.line")
 
 # ---------
 # Connect to our discovered node
