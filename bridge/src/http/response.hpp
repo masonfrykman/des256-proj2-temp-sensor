@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <string>
 #include <sstream>
+#include <iostream>
 
 class Response final {
     public:
@@ -36,6 +37,8 @@ class Response final {
             if(!body.empty()) {
                 s << body;
             }
+
+            std::cout << "[" << status << "] " << headers["__PATH__"] << std::endl;
 
             return s.str();
         }
