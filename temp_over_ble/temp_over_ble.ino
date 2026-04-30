@@ -58,8 +58,9 @@ void setup(void)
   // BLE init
   if ( !ble.begin(VERBOSE_MODE) )
   {
-    perr("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?");
+    perr("Couldn't find Bluefruit");
   }
+
 
   ble.echo(false);
   ble.verbose(false);
@@ -71,7 +72,7 @@ void setup(void)
   // Useful for figuring out what device this is in a scan when there's ~30 other LE devices around you.
   char addr[64];
 
-  ble.atcommandStrReply("AT+BLEGETADDR", addr, 64, 999);
+  ble.atcommandStrReply("AT+BLEGETADDR", addr, 64, 200);
 
   lcd.print(addr);
 
@@ -80,14 +81,9 @@ void setup(void)
   // Sets up the GATT temperature service
   ble.sendCommandCheckOK("AT+GATTCLEAR");
   ble.sendCommandCheckOK("AT+GATTADDSERVICE=UUID=0xD256");
-  auto rep = ble.sendCommandWithIntReply("AT+GATTADDCHAR=UUID=0x0001,PROPERTIES=0x02,MIN_LEN=1,MAX_LEN=8,VALUE=39", &idx);
+  auto rep = ble.sendCommandWithIntReply("AT+GATTADDCHAR=UUID=0x0001,PROPERTIES=0x02,MIN_LEN=1,MAX_LEN=8,VALUE=55", &idx);
   lcd.setCursor(0, 1);
   lcd.print(rep); // Puts 1 on the second line (under the hardware address) if the service was set up correctly.
-
-  if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) )
-  {
-    ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
-  }
 }
 void loop(void)
 {
@@ -140,5 +136,9 @@ void loop(void)
 
   lcd.print(buf);
 
-  ble.sendCommandCheckOK(buf);
+  bool x = ble.sendCommandCheckOK(buf);
+  if(!x) {
+    delay(2000);
+    perr("error");
+  }
 }
