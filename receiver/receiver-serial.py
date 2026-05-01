@@ -4,20 +4,33 @@ from pubsub import pub
 import time
 import requests
 from os import environ
+from sys import argv, stderr
 
 # -- CONFIGURATION OPTIONS --
 # TODO: consider moving these to environment variables or args
-SERIAL_PATH = "/dev/cu.usbmodem94A99028C3401"
+#SERIAL_PATH = "/dev/cu.usbmodem94A99028C3401"
+if len(argv) < 2:
+    print("1 positional argument required.")
+    raise SystemExit(1)
+
+SERIAL_PATH = argv[1]
+
 if "T1_PSK" not in environ:
     print("T1_PSK must be a defined environment variable.")
     raise SystemExit(1)
 
 PSK = environ['T1_PSK']
 
+if "T1_FRIDGEPATH" not in environ:
+    print("T1_FRIDGEPATH must be a defined environment variable.")
+    raise SystemExit(1)
+
+FRIDGEPATH = environ['T1_FRIDGEPATH']
+
 # ---------
 # Load in fridge IDs
 fridges = []
-with open("fridges.txt", "r") as fridgeFile:
+with open(FRIDGEPATH, "r") as fridgeFile:
     fridges = fridgeFile.readlines()
 
 i = 0
@@ -91,7 +104,12 @@ def onRecv(packet, interface):
     fridge = fridges[fridgeID]
 
     # -- Send data to the webserver --
-    report(fridge, temp, printRep=True)
+    try:
+        report(fridge, temp, printRep=True)
+    except ConnectionError:
+        stderr.writeln("Failed to report temperature, connection error.")
+        stderr.flush()
+        pass
 
 def onDc(interface, topic=pub.AUTO_TOPIC):
     print("Connection lost! Will try to reconnect within the next 10 seconds.")

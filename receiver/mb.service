@@ -1,0 +1,12 @@
+[Service]
+Type=simple
+ExecStart=/home/mason/.venvs/mtv/bin/python /home/mason/des256-proj2-temp-sensor/receiver/receiver-serial.py /dev/serial/by-id/usb-Espressif_Systems_Heltec_Vision_Master_E213_94A99028C340-if00
+Environment="T1_PSK=" "T1_FRIDGEPATH=/home/mason/des256-proj2-temp-sensor/receiver/fridges.txt"
+
+[Unit]
+Description=Recieve temp readings from mesh
+Wants=network-online.target
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
